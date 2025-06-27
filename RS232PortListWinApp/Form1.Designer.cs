@@ -41,10 +41,11 @@
             // 
             // comboBoxPorts
             // 
+            comboBoxPorts.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBoxPorts.FormattingEnabled = true;
             comboBoxPorts.Location = new Point(190, 92);
             comboBoxPorts.Name = "comboBoxPorts";
-            comboBoxPorts.Size = new Size(280, 23);
+            comboBoxPorts.Size = new Size(220, 23);
             comboBoxPorts.TabIndex = 0;
             // 
             // button1
@@ -53,13 +54,14 @@
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 1;
-            button1.Text = "button1";
+            button1.Text = "Wait";
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
             // richTextBox1
             // 
-            richTextBox1.Location = new Point(64, 141);
+            richTextBox1.Enabled = false;
+            richTextBox1.Location = new Point(69, 145);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.Size = new Size(644, 250);
             richTextBox1.TabIndex = 2;
@@ -108,7 +110,7 @@
             Controls.Add(button1);
             Controls.Add(comboBoxPorts);
             Name = "Form1";
-            Text = "Form1";
+            Text = "PCL RECCORD";
             Load += Form1_Load;
             ResumeLayout(false);
             PerformLayout();

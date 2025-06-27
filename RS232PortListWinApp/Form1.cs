@@ -75,7 +75,7 @@ namespace RS232PortListWinApp
                 // ต้องใช้ Invoke เพราะรับข้อมูลจาก Thread อื่น
                 Invoke(new Action(() =>
                 {
-                    richTextBox1.AppendText(incomingData);
+                    richTextBox1.AppendText(incomingData + "\n");
                 }));
 
                 InsertDataToDatabase(incomingData);
