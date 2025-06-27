@@ -36,14 +36,14 @@
             // comboBoxPorts
             // 
             comboBoxPorts.FormattingEnabled = true;
-            comboBoxPorts.Location = new Point(198, 108);
+            comboBoxPorts.Location = new Point(149, 27);
             comboBoxPorts.Name = "comboBoxPorts";
             comboBoxPorts.Size = new Size(280, 23);
             comboBoxPorts.TabIndex = 0;
             // 
             // button1
             // 
-            button1.Location = new Point(497, 108);
+            button1.Location = new Point(448, 27);
             button1.Name = "button1";
             button1.Size = new Size(75, 23);
             button1.TabIndex = 1;
@@ -53,7 +53,7 @@
             // 
             // richTextBox1
             // 
-            richTextBox1.Location = new Point(75, 164);
+            richTextBox1.Location = new Point(26, 83);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.Size = new Size(644, 250);
             richTextBox1.TabIndex = 2;
@@ -63,7 +63,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(694, 355);
             Controls.Add(richTextBox1);
             Controls.Add(button1);
             Controls.Add(comboBoxPorts);

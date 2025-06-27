@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using System;
 using System.IO.Ports;
 using System.Windows.Forms;
@@ -7,7 +8,7 @@ namespace RS232PortListWinApp
     public partial class Form1 : Form
     {
         private SerialPort serialPort;
-
+        string factory = "";
         public Form1()
         {
             InitializeComponent();
@@ -16,7 +17,12 @@ namespace RS232PortListWinApp
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            string[] lines = File.ReadAllLines("Appsetting.txt");
 
+            factory = lines
+                .FirstOrDefault(line => line.StartsWith("FACTORY="))
+                ?.Split('=')[1]
+                ?.Trim();
         }
 
         private void LoadSerialPorts()
@@ -53,8 +59,10 @@ namespace RS232PortListWinApp
                 // ต้องใช้ Invoke เพราะรับข้อมูลจาก Thread อื่น
                 Invoke(new Action(() =>
                 {
-                    MessageBox.Show(incomingData);
+                    richTextBox1.AppendText(incomingData);
                 }));
+
+                InsertDataToDatabase(incomingData);
             }
             catch (Exception ex)
             {
@@ -91,6 +99,38 @@ namespace RS232PortListWinApp
             catch (Exception ex)
             {
                 MessageBox.Show("Error opening port: " + ex.Message);
+            }
+        }
+        private void InsertDataToDatabase(string data)
+        {
+            try
+            {
+                // ตัวอย่าง Connection String สำหรับ LocalDB (ปรับ PCNAME ถ้าจำเป็น)
+               
+                string connectionString = @"Server=" + Environment.MachineName + @"\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    string sql = "INSERT INTO [WASH].[dbo].[TRANSACTION] (Factory, Data, CreatedDate) VALUES (@Factory, @Data, GETDATE())";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@Factory", factory);
+                        cmd.Parameters.AddWithValue("@Data", data);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log หรือแสดงข้อความ
+                Invoke(new Action(() =>
+                {
+                    MessageBox.Show("Insert Error: " + ex.Message);
+                }));
             }
         }
     }
