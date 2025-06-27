@@ -9,8 +9,8 @@ namespace RS232PortListWinApp
     {
         private SerialPort serialPort;
         string factory = "";
-       
-        
+        private DateTime lastReceivedTime = DateTime.Now;
+
         private string GetConnectionString()
         {
             return $@"Server={Environment.MachineName}\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
@@ -35,9 +35,11 @@ namespace RS232PortListWinApp
             timer1.Start();
             timer2.Interval = 10000;
             timer2.Start();
+            timer3.Interval = 30000;
+            timer3.Start();
         }
 
-       
+
 
         private void LoadSerialPorts()
         {
@@ -69,7 +71,7 @@ namespace RS232PortListWinApp
             try
             {
                 string incomingData = serialPort.ReadExisting();
-
+                lastReceivedTime = DateTime.Now; // <-- เพิ่มบรรทัดนี้
                 // ต้องใช้ Invoke เพราะรับข้อมูลจาก Thread อื่น
                 Invoke(new Action(() =>
                 {
@@ -97,7 +99,7 @@ namespace RS232PortListWinApp
             string selectedPort = comboBoxPorts.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(selectedPort))
             {
-                MessageBox.Show("Please select a port.");
+                MessageBox.Show("Please select a port." + "\n");
                 return;
             }
 
@@ -191,7 +193,7 @@ namespace RS232PortListWinApp
                                 {
                                     updateCmd.Parameters.AddWithValue("@TransacId", item.TransacId);
                                     updateCmd.ExecuteNonQuery();
-                                    richTextBox1.AppendText("send clound");
+                                    richTextBox1.AppendText("send cloud" + "\n");
                                 }
 
 
@@ -224,7 +226,7 @@ namespace RS232PortListWinApp
                 using (SqlCommand selectCmd = new SqlCommand(selectSql1, conn))
                 {
                     int count = (int)selectCmd.ExecuteScalar(); // ดึงค่าตรง ๆ
-                    label2.Text = "Pending: " + count.ToString();
+                    label2.Text = "Pending: " + count.ToString()+ "\n";
                 }
             }
 
@@ -236,6 +238,55 @@ namespace RS232PortListWinApp
             if (serialPort != null && serialPort.IsOpen)
             {
                 serialPort.Close();
+            }
+        }
+
+        private void RestartSerialPort()
+        {
+            try
+            {
+                if (serialPort != null && serialPort.IsOpen)
+                {
+                    serialPort.DataReceived -= SerialPort_DataReceived;
+                    serialPort.Close();
+                }
+
+                string selectedPort = comboBoxPorts.SelectedItem?.ToString();
+                if (!string.IsNullOrEmpty(selectedPort))
+                {
+                    serialPort = new SerialPort(selectedPort, 9600, Parity.None, 8, StopBits.One);
+                    serialPort.DataReceived += SerialPort_DataReceived;
+                    serialPort.Open();
+
+                    lastReceivedTime = DateTime.Now;
+
+                    Invoke(new Action(() =>
+                    {
+                        richTextBox1.AppendText("[Watchdog] Port restarted successfully.\n");
+                    }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Invoke(new Action(() =>
+                {
+                    richTextBox1.AppendText("[Watchdog] Error restarting port: " + ex.Message + "\n");
+                }));
+            }
+        }
+
+        private void timer3_Tick(object sender, EventArgs e)
+        {
+            TimeSpan noDataDuration = DateTime.Now - lastReceivedTime;
+
+            if (noDataDuration.TotalSeconds > 30) // ไม่มีข้อมูลเกิน 30 วินาที
+            {
+                Invoke(new Action(() =>
+                {
+                    richTextBox1.AppendText("\n[Watchdog] No data > 30s. Reconnecting serial port...\n");
+                }));
+
+                RestartSerialPort();
             }
         }
     }

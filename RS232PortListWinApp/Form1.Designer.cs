@@ -36,6 +36,7 @@
             label1 = new Label();
             label2 = new Label();
             timer2 = new System.Windows.Forms.Timer(components);
+            timer3 = new System.Windows.Forms.Timer(components);
             SuspendLayout();
             // 
             // comboBoxPorts
@@ -92,6 +93,10 @@
             // 
             timer2.Tick += timer2_Tick;
             // 
+            // timer3
+            // 
+            timer3.Tick += timer3_Tick;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -118,5 +123,6 @@
         private Label label1;
         private Label label2;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.Timer timer3;
     }
 }
