@@ -9,7 +9,12 @@ namespace RS232PortListWinApp
     {
         private SerialPort serialPort;
         string factory = "";
-
+       
+        
+        private string GetConnectionString()
+        {
+            return $@"Server={Environment.MachineName}\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
+        }
         public Form1()
         {
             InitializeComponent();
@@ -25,9 +30,14 @@ namespace RS232PortListWinApp
                 ?.Split('=')[1]
                 ?.Trim();
 
+
             timer1.Interval = 60000;
             timer1.Start();
+            timer2.Interval = 10000;
+            timer2.Start();
         }
+
+       
 
         private void LoadSerialPorts()
         {
@@ -80,7 +90,7 @@ namespace RS232PortListWinApp
             {
                 serialPort.Close();
                 button1.Text = "Connect";
-                MessageBox.Show("Port Closed");
+                //  MessageBox.Show("Port Closed");
                 return;
             }
 
@@ -98,7 +108,7 @@ namespace RS232PortListWinApp
                 serialPort.Open();
 
                 button1.Text = "Disconnect";
-                MessageBox.Show("Connected to " + selectedPort);
+                //  MessageBox.Show("Connected to " + selectedPort);
             }
             catch (Exception ex)
             {
@@ -111,11 +121,12 @@ namespace RS232PortListWinApp
             {
                 // ตัวอย่าง Connection String สำหรับ LocalDB (ปรับ PCNAME ถ้าจำเป็น)
 
-                string connectionString = @"Server=" + Environment.MachineName + @"\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
-
+                string connectionString = GetConnectionString();
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
+
+
 
                     string sql = "INSERT INTO [WASH].[dbo].[TRANSACTION] (Factory, Data, CreatedDate) VALUES (@Factory, @Data, GETDATE())";
 
@@ -126,9 +137,12 @@ namespace RS232PortListWinApp
 
                         cmd.ExecuteNonQuery();
 
-                    
+
                     }
+
+
                 }
+
             }
             catch (Exception ex)
             {
@@ -140,33 +154,25 @@ namespace RS232PortListWinApp
             }
         }
 
+
         private void timer1_Tick(object sender, EventArgs e)
         {
             try
             {
-                string connectionString = @"Server=" + Environment.MachineName + @"\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
-
+                string connectionString = GetConnectionString();
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     conn.Open();
 
-                    string selectSql1 = "SELECT count(*) FROM [dbo].[TRANSACTION] WHERE SendToCloundDate IS NULL";
-
-                 
-                    using (SqlCommand selectCmd = new SqlCommand(selectSql1, conn))
-                    {
-                        int count = (int)selectCmd.ExecuteScalar(); // ดึงค่าตรง ๆ
-                        label2.Text = "Pending: " + count.ToString();
-                    }
 
                     string selectSql = "SELECT TransacId, Factory, Data FROM [dbo].[TRANSACTION] WHERE SendToCloundDate IS NULL";
 
                     using (SqlCommand selectCmd = new SqlCommand(selectSql, conn))
-                    using (SqlDataReader reader =  selectCmd.ExecuteReader())
+                    using (SqlDataReader reader = selectCmd.ExecuteReader())
                     {
                         var items = new List<(int TransacId, string Factory, string Data)>();
 
-                        
+
                         while (reader.Read())
                         {
                             items.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
@@ -184,20 +190,52 @@ namespace RS232PortListWinApp
                                 using (SqlCommand updateCmd = new SqlCommand(updateSql, conn))
                                 {
                                     updateCmd.Parameters.AddWithValue("@TransacId", item.TransacId);
-                                    updateCmd.ExecuteNonQueryAsync();
+                                    updateCmd.ExecuteNonQuery();
                                     richTextBox1.AppendText("send clound");
                                 }
+
+
                             }
+
                         }
                     }
+
                 }
             }
             catch (Exception ex)
             {
                 Invoke(new Action(() =>
                 {
-                 
+
                 }));
+            }
+        }
+
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            string connectionString = GetConnectionString();
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string selectSql1 = "SELECT count(*) FROM [dbo].[TRANSACTION] WHERE SendToCloundDate IS NULL";
+
+
+                using (SqlCommand selectCmd = new SqlCommand(selectSql1, conn))
+                {
+                    int count = (int)selectCmd.ExecuteScalar(); // ดึงค่าตรง ๆ
+                    label2.Text = "Pending: " + count.ToString();
+                }
+            }
+
+        }
+
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (serialPort != null && serialPort.IsOpen)
+            {
+                serialPort.Close();
             }
         }
     }
