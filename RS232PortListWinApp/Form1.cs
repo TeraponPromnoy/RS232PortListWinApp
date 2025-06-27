@@ -9,6 +9,7 @@ namespace RS232PortListWinApp
     {
         private SerialPort serialPort;
         string factory = "";
+
         public Form1()
         {
             InitializeComponent();
@@ -23,6 +24,9 @@ namespace RS232PortListWinApp
                 .FirstOrDefault(line => line.StartsWith("FACTORY="))
                 ?.Split('=')[1]
                 ?.Trim();
+
+            timer1.Interval = 60000;
+            timer1.Start();
         }
 
         private void LoadSerialPorts()
@@ -106,7 +110,7 @@ namespace RS232PortListWinApp
             try
             {
                 // ตัวอย่าง Connection String สำหรับ LocalDB (ปรับ PCNAME ถ้าจำเป็น)
-               
+
                 string connectionString = @"Server=" + Environment.MachineName + @"\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
@@ -121,6 +125,8 @@ namespace RS232PortListWinApp
                         cmd.Parameters.AddWithValue("@Data", data);
 
                         cmd.ExecuteNonQuery();
+
+                    
                     }
                 }
             }
@@ -130,6 +136,67 @@ namespace RS232PortListWinApp
                 Invoke(new Action(() =>
                 {
                     MessageBox.Show("Insert Error: " + ex.Message);
+                }));
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                string connectionString = @"Server=" + Environment.MachineName + @"\SQLEXPRESS;Database=WASH;Trusted_Connection=True;TrustServerCertificate=True;";
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    string selectSql1 = "SELECT count(*) FROM [dbo].[TRANSACTION] WHERE SendToCloundDate IS NULL";
+
+                 
+                    using (SqlCommand selectCmd = new SqlCommand(selectSql1, conn))
+                    {
+                        int count = (int)selectCmd.ExecuteScalar(); // ดึงค่าตรง ๆ
+                        label2.Text = "Pending: " + count.ToString();
+                    }
+
+                    string selectSql = "SELECT TransacId, Factory, Data FROM [dbo].[TRANSACTION] WHERE SendToCloundDate IS NULL";
+
+                    using (SqlCommand selectCmd = new SqlCommand(selectSql, conn))
+                    using (SqlDataReader reader =  selectCmd.ExecuteReader())
+                    {
+                        var items = new List<(int TransacId, string Factory, string Data)>();
+
+                        
+                        while (reader.Read())
+                        {
+                            items.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+                        }
+
+                        reader.Close();
+
+                        foreach (var item in items)
+                        {
+                            bool sent = false; //SendToCloudAsync(item.Factory, item.Data);
+
+                            if (sent)
+                            {
+                                string updateSql = "UPDATE [dbo].[TRANSACTION] SET SendToCloundDate = GETDATE() WHERE TransacId = @TransacId";
+                                using (SqlCommand updateCmd = new SqlCommand(updateSql, conn))
+                                {
+                                    updateCmd.Parameters.AddWithValue("@TransacId", item.TransacId);
+                                    updateCmd.ExecuteNonQueryAsync();
+                                    richTextBox1.AppendText("send clound");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Invoke(new Action(() =>
+                {
+                 
                 }));
             }
         }
